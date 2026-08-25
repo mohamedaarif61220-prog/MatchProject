@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap');
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Custom variables and theme colors */
+@layer base {
+    body {
+        @apply bg-obsidian-950 text-slate-100 font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-100 overflow-x-hidden;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-display text-white font-semibold tracking-tight;
+    }
+}
+
+@layer components {
+    .glass-panel {
+        @apply bg-obsidian-900/60 border border-slate-800/40 backdrop-blur-xl shadow-glass rounded-2xl transition-all duration-300;
+    }
+
+    .glass-panel-interactive {
+        @apply glass-panel hover:bg-obsidian-900/80 hover:border-teal-500/30 hover:shadow-glass-hover;
+    }
+
+    .btn-primary {
+        @apply relative px-5 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-obsidian-950 font-semibold rounded-xl shadow-lg hover:shadow-teal-500/20 active:scale-98 transition-all duration-200;
+    }
+
+    .btn-secondary {
+        @apply px-5 py-2.5 bg-obsidian-800/80 border border-slate-700 hover:border-slate-500 hover:bg-obsidian-800 text-white font-medium rounded-xl active:scale-98 transition-all duration-200;
+    }
+
+    .btn-glow {
+        @apply btn-primary before:absolute before:inset-0 before:bg-teal-400 before:rounded-xl before:blur-md before:opacity-0 before:hover:opacity-40 before:transition-opacity before:-z-10;
+    }
+
+    /* New: signature "beam" CTA used on the landing page hero */
+    .btn-beam {
+        @apply relative px-8 py-3.5 rounded-xl font-semibold text-obsidian-950 bg-gradient-to-r from-accent-cyan to-accent-ember shadow-lg hover:shadow-ember-glow active:scale-98 transition-all duration-200;
+    }
+
+    /* Monospace tag for stats / scores, reinforces the "deterministic engine" feel */
+    .stat-mono {
+        @apply font-mono tracking-tight tabular-nums;
+    }
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #06070a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1f293d;
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #14b8a6;
+}
