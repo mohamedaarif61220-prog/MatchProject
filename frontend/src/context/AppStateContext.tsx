@@ -119,9 +119,21 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       createdAt: new Date().toISOString()
     };
 
-    await dbService.saveProject(newProject);
-    await refreshState();
-    setActiveProject(newProject);
+    // Optimistically update local state immediately for instant UI response
+    setProjects(prev => {
+      if (prev.some(p => p.projectId === newProject.projectId)) {
+        return prev.map(p => p.projectId === newProject.projectId ? newProject : p);
+      }
+      return [...prev, newProject];
+    });
+    setActiveProjectState(newProject);
+    localStorage.setItem('pm_active_project_id', newProject.projectId);
+
+    // Save to database asynchronously in background
+    dbService.saveProject(newProject).catch(err => {
+      console.error("Error persisting project to database:", err);
+    });
+
     return newProject;
   };
 

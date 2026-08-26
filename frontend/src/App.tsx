@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import { dbService } from './services/db';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { OnboardingPage } from './pages/OnboardingPage';
@@ -46,23 +45,13 @@ function App() {
                 <Link to="/invitations" className="text-xs font-semibold text-slate-300 hover:text-teal-400 transition-colors">
                   Invitations
                 </Link>
-                <button
-                  onClick={() => {
-                    dbService.resetDemoState();
-                    window.location.href = '/dashboard';
-                  }}
-                  className="text-xs font-semibold text-amber-400/80 hover:text-amber-300 transition-colors px-2 py-1 bg-amber-500/10 rounded-md border border-amber-500/20"
-                  title="Reset demo data to initial competition baseline"
-                >
-                  Reset Demo
-                </button>
                 <button onClick={logout} className="btn-secondary !px-3 !py-1 text-xs text-slate-400 hover:text-white">
                   Sign Out
                 </button>
               </>
             ) : (
               <Link to="/login" className="btn-secondary !px-4 !py-1.5 text-xs font-semibold">
-                Sign In / Demo
+                Sign In
               </Link>
             )}
           </div>

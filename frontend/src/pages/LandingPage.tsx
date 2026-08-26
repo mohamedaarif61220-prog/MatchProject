@@ -28,14 +28,15 @@ const CANDIDATES = [
 ];
 
 export const LandingPage: React.FC = () => {
-  const { loginWithDemoProfile, user } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
-  const handleDemoClick = async () => {
-    if (!user) {
-      await loginWithDemoProfile();
+  const handleAuthClick = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/login');
     }
-    navigate('/dashboard');
   };
 
   return (
@@ -72,18 +73,18 @@ export const LandingPage: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mb-12">
               <button
-                onClick={handleDemoClick}
+                onClick={handleAuthClick}
                 className="btn-beam text-base flex items-center justify-center gap-2"
               >
                 <span>Build My Team</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
               <button
-                onClick={handleDemoClick}
+                onClick={handleAuthClick}
                 className="btn-secondary px-8 py-3 text-base flex items-center justify-center gap-2 text-slate-300 hover:text-white"
               >
                 <Zap className="w-4 h-4 text-accent-cyan" />
-                <span>Try Demo Mode</span>
+                <span>Get Started</span>
               </button>
             </div>
 
@@ -276,10 +277,10 @@ export const LandingPage: React.FC = () => {
             Every teammate, scored. Every score, explained.
           </h2>
           <p className="text-slate-400 max-w-lg mx-auto mb-8">
-            Try Demo Mode — zero setup, real scoring, your dream team in minutes.
+            Create an account — real scoring, transparent matches, your dream team in minutes.
           </p>
           <button
-            onClick={handleDemoClick}
+            onClick={handleAuthClick}
             className="btn-beam text-base font-bold inline-flex items-center gap-2"
           >
             <span>Find Your Team</span>

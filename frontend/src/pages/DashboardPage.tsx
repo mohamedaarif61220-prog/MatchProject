@@ -15,10 +15,23 @@ export const DashboardPage: React.FC = () => {
     navigate(`/projects/${proj.projectId}/team`);
   };
 
+  const [launchingDemo, setLaunchingDemo] = React.useState(false);
+
   const handleAutofillDemo = async () => {
-    const created = await createProject(DEMO_PROJECT);
-    setActiveProject(created);
-    navigate(`/projects/${created.projectId}/analysis`);
+    if (launchingDemo) return;
+    setLaunchingDemo(true);
+    try {
+      const existing = projects.find(p => p.projectId === DEMO_PROJECT.projectId || p.name === DEMO_PROJECT.name);
+      if (existing) {
+        setActiveProject(existing);
+        navigate(`/projects/${existing.projectId}/analysis`);
+      } else {
+        const created = await createProject(DEMO_PROJECT);
+        navigate(`/projects/${created.projectId}/analysis`);
+      }
+    } finally {
+      setLaunchingDemo(false);
+    }
   };
 
   return (
@@ -66,9 +79,10 @@ export const DashboardPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <button
             onClick={handleAutofillDemo}
-            className="btn-beam px-6 py-2.5 text-xs font-bold flex items-center justify-center gap-2"
+            disabled={launchingDemo}
+            className="btn-beam px-6 py-2.5 text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <span>Launch SmartCampus Demo</span>
+            <span>{launchingDemo ? 'Launching...' : 'Launch SmartCampus Demo'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
