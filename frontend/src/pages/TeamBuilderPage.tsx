@@ -1,22 +1,29 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAppState } from '../context/AppStateContext';
+import { useAuth } from '../context/AuthContext';
 import { calculateOverallScore } from '../hooks/useMatchingEngine';
 import { calculateTeamMetrics, previewTeamImpact } from '../hooks/useTeamMetrics';
 import { CandidateMatchCard } from '../components/CandidateMatchCard';
 import { WhatIfModal } from '../components/WhatIfModal';
 import { apiService } from '../services/api';
 import type { User, WhatIfTeamImpact } from '../types';
-import { Sparkles, Users, Layers, ShieldCheck, AlertTriangle, Trash2 } from 'lucide-react';
+import { Sparkles, Users, Layers, ShieldCheck, AlertTriangle, Trash2, Send, X } from 'lucide-react';
 
 export const TeamBuilderPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
-  const { projects, activeProject, currentTeam, candidates, addToTeam, removeFromTeam } = useAppState();
+  const { projects, activeProject, currentTeam, candidates, addToTeam, removeFromTeam, sendTeamInvitation } = useAppState();
 
   const project = projects.find(p => p.projectId === projectId) || activeProject;
 
   const [previewCandidate, setPreviewCandidate] = useState<User | null>(null);
   const [previewImpact, setPreviewImpact] = useState<WhatIfTeamImpact | null>(null);
+
+  // Invite modal state
+  const [inviteModalCandidate, setInviteModalCandidate] = useState<User | null>(null);
+  const [inviteCustomNote, setInviteCustomNote] = useState<string>('');
+  const [sendingInvite, setSendingInvite] = useState<boolean>(false);
+  const [inviteSentToast, setInviteSentToast] = useState<string | null>(null);
 
   const [aiRecommendation, setAiRecommendation] = useState<{
     recommendedCandidateId: string;
@@ -24,25 +31,82 @@ export const TeamBuilderPage: React.FC = () => {
     reasoning: string;
   } | null>(null);
   const [loadingAiRec, setLoadingAiRec] = useState<boolean>(false);
+  const [creatingTeam, setCreatingTeam] = useState<boolean>(false);
 
   if (!project) {
     return <div className="text-center py-20 text-slate-400">No active project selected.</div>;
   }
 
-  // 1. Calculate Deterministic Team Metrics for active team
-  const teamMetrics = calculateTeamMetrics(currentTeam, project);
+  // Handle invitation modal launch
+  const handleOpenInviteModal = (candidate: User) => {
+    setInviteModalCandidate(candidate);
+    const topSkills = candidate.skills.slice(0, 3).map(s => s.name).join(', ');
+    setInviteCustomNote(
+      `Hi ${candidate.name}, we saw your impressive background in ${topSkills || candidate.primaryRole}. We're building ${project.name} and would love to collaborate with you as our ${candidate.primaryRole}!`
+    );
+  };
+
+  const handleConfirmSendInvite = async () => {
+    if (!inviteModalCandidate) return;
+    setSendingInvite(true);
+    try {
+      await sendTeamInvitation(inviteModalCandidate.userId, inviteCustomNote);
+      setInviteSentToast(`Invitation sent to ${inviteModalCandidate.name}!`);
+      setTimeout(() => setInviteSentToast(null), 4000);
+      setInviteModalCandidate(null);
+    } catch (e) {
+      console.error("Failed to send invitation:", e);
+    } finally {
+      setSendingInvite(false);
+    }
+  };
+
+  const handleCreateTeamAndSendAllInvites = async () => {
+    if (currentTeam.length === 0) return;
+    setCreatingTeam(true);
+    try {
+      // Dispatch invitations to all team members concurrently
+      await Promise.all(
+        currentTeam.map(member => {
+          const topSkills = member.skills.slice(0, 3).map(s => s.name).join(', ');
+          const note = `Hi ${member.name}, we selected you for ${project.name}! Your expertise in ${topSkills || member.primaryRole} is a perfect match for our team as our ${member.primaryRole}. We're excited to work with you!`;
+          return sendTeamInvitation(member.userId, note);
+        })
+      );
+      setInviteSentToast(`Team Finalized! Sent invitations to all ${currentTeam.length} team members.`);
+      setTimeout(() => setInviteSentToast(null), 5000);
+    } catch (e) {
+      console.error("Error creating team and sending invitations:", e);
+    } finally {
+      setCreatingTeam(false);
+    }
+  };
+
+  const { user } = useAuth();
+
+  // Ensure current logged-in user is always included in the active team list as Team Lead
+  const effectiveTeam: User[] = React.useMemo(() => {
+    if (!user) return currentTeam;
+    if (currentTeam.some(m => m.userId === user.userId)) {
+      return currentTeam;
+    }
+    return [user, ...currentTeam];
+  }, [currentTeam, user]);
+
+  // 1. Calculate Deterministic Team Metrics for active team including owner
+  const teamMetrics = calculateTeamMetrics(effectiveTeam, project);
 
   // 2. Rank Candidates pool using Deterministic Candidate Match Engine
   const candidateMatches = candidates.map(cand => ({
     user: cand,
-    match: calculateOverallScore(cand, project, currentTeam)
+    match: calculateOverallScore(cand, project, effectiveTeam)
   })).sort((a, b) => b.match.overallScore - a.match.overallScore);
 
   // 3. What-If Preview Handler
   const handlePreviewImpact = (candidate: User) => {
-    const isMember = currentTeam.some(m => m.userId === candidate.userId);
+    const isMember = effectiveTeam.some(m => m.userId === candidate.userId);
     const action = isMember ? 'remove' : 'add';
-    const impact = previewTeamImpact(candidate, action, currentTeam, project);
+    const impact = previewTeamImpact(candidate, action, effectiveTeam, project);
     setPreviewCandidate(candidate);
     setPreviewImpact(impact);
   };
@@ -170,6 +234,7 @@ export const TeamBuilderPage: React.FC = () => {
                 project={project}
                 onPreviewImpact={handlePreviewImpact}
                 onAddToTeam={addToTeam}
+                onSendInvite={handleOpenInviteModal}
                 isAlreadyMember={currentTeam.some(m => m.userId === candidateUser.userId)}
               />
             ))}
@@ -184,37 +249,78 @@ export const TeamBuilderPage: React.FC = () => {
             <div className="flex justify-between items-center pb-3 border-b border-slate-800">
               <h4 className="text-base font-bold text-white flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>Active Team ({currentTeam.length} / {project.teamSize})</span>
+                <span>Active Team ({effectiveTeam.length} / {project.teamSize})</span>
               </h4>
               <span className="text-xs font-semibold text-accent-cyan">{teamMetrics.teamCompatibility}% Match</span>
             </div>
 
-            {currentTeam.length === 0 ? (
+            {effectiveTeam.length === 0 ? (
               <div className="text-center py-6 text-slate-400 space-y-2">
                 <p className="text-xs">No members added to team yet.</p>
                 <p className="text-[11px] text-slate-500">Select candidate cards on the left to build team synergy.</p>
               </div>
             ) : (
-              <div className="space-y-2.5">
-                {currentTeam.map(member => (
-                  <div key={member.userId} className="flex justify-between items-center p-3 bg-obsidian-900 rounded-xl border border-slate-800 text-xs">
-                    <div className="flex items-center gap-2.5">
-                      <img src={member.avatarUrl} alt={member.name} className="w-8 h-8 rounded-lg bg-slate-800" />
-                      <div>
-                        <p className="font-bold text-slate-200">{member.name}</p>
-                        <p className="text-[10px] text-slate-400">{member.primaryRole}</p>
-                      </div>
-                    </div>
+              <div className="space-y-3">
+                <div className="space-y-2.5">
+                  {effectiveTeam.map(member => {
+                    const isOwner = member.userId === user?.userId;
+                    return (
+                      <div key={member.userId} className="flex justify-between items-center p-3 bg-obsidian-900 rounded-xl border border-slate-800 text-xs">
+                        <div className="flex items-center gap-2.5">
+                          <img src={member.avatarUrl} alt={member.name} className="w-8 h-8 rounded-lg bg-slate-800 object-cover" />
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-bold text-slate-200">{member.name}</p>
+                              {isOwner && (
+                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-accent-cyan/20 text-accent-cyan rounded border border-accent-cyan/40">
+                                  You (Lead)
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-slate-400">{member.primaryRole}</p>
+                          </div>
+                        </div>
 
-                    <button
-                      onClick={() => removeFromTeam(member.userId)}
-                      className="text-slate-500 hover:text-red-400 p-1"
-                      title="Remove member"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+                        {!isOwner ? (
+                          <button
+                            onClick={() => removeFromTeam(member.userId)}
+                            className="text-slate-500 hover:text-red-400 p-1 transition-colors"
+                            title="Remove member"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-slate-500 italic">Owner</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Create Team & Notify All Action Button */}
+                <div className="pt-3 border-t border-slate-800">
+                  <button
+                    onClick={handleCreateTeamAndSendAllInvites}
+                    disabled={creatingTeam}
+                    className={`w-full py-3 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${
+                      effectiveTeam.length >= project.teamSize
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-emerald-500/20'
+                        : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20'
+                    }`}
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>
+                      {creatingTeam
+                        ? 'Creating Team & Sending Invitations...'
+                        : effectiveTeam.length >= project.teamSize
+                        ? `Create Team & Notify All (${effectiveTeam.length} Members)`
+                        : `Create Team & Notify (${effectiveTeam.length} / ${project.teamSize})`}
+                    </span>
+                  </button>
+                  <p className="text-[11px] text-slate-400 text-center mt-1.5">
+                    Sends automated personalized invitations to all selected candidates.
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -284,6 +390,84 @@ export const TeamBuilderPage: React.FC = () => {
           onConfirmAdd={() => addToTeam(previewCandidate)}
           isAlreadyMember={currentTeam.some(m => m.userId === previewCandidate.userId)}
         />
+      )}
+
+      {/* Send Invitation Modal */}
+      {inviteModalCandidate && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-panel max-w-lg w-full p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-5 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent-cyan via-accent-purple to-accent-ember" />
+
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                <img
+                  src={inviteModalCandidate.avatarUrl}
+                  alt={inviteModalCandidate.name}
+                  className="w-12 h-12 rounded-xl bg-slate-800 border border-accent-cyan/30"
+                />
+                <div>
+                  <h3 className="text-base font-bold text-white font-display">Invite {inviteModalCandidate.name}</h3>
+                  <p className="text-xs text-slate-400">{inviteModalCandidate.primaryRole} • {inviteModalCandidate.experience} Level</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setInviteModalCandidate(null)}
+                className="text-slate-500 hover:text-white p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-obsidian-900 rounded-xl border border-slate-800 text-xs space-y-1.5">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Target Project</span>
+              <p className="font-bold text-white text-sm">{project.name}</p>
+              <div className="flex flex-wrap gap-1 pt-1">
+                {inviteModalCandidate.skills.map((s: any) => (
+                  <span key={s.name} className="px-2 py-0.5 bg-slate-800 text-accent-cyan rounded text-[10px] border border-slate-700">
+                    {s.name} ({s.level})
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">Invitation Note / Interest Pitch</label>
+              <textarea
+                rows={4}
+                value={inviteCustomNote}
+                onChange={e => setInviteCustomNote(e.target.value)}
+                className="w-full bg-obsidian-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-accent-cyan leading-relaxed resize-none"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setInviteModalCandidate(null)}
+                className="btn-secondary flex-1 py-2.5 text-xs text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSendInvite}
+                disabled={sendingInvite}
+                className="btn-beam flex-1 py-2.5 text-xs font-bold flex items-center justify-center gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>{sendingInvite ? 'Sending Invitation...' : 'Send Team Invitation'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Toast */}
+      {inviteSentToast && (
+        <div className="fixed bottom-6 right-6 z-50 p-4 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl text-emerald-300 text-xs font-bold shadow-2xl flex items-center gap-2 animate-bounce">
+          <ShieldCheck className="w-4 h-4" />
+          <span>{inviteSentToast}</span>
+        </div>
       )}
     </div>
   );

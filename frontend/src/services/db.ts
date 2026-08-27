@@ -24,11 +24,12 @@ const setLocal = <T>(key: string, data: T[]): void => {
   localStorage.setItem(key, JSON.stringify(data));
 };
 
-// Initialize LocalStorage with seed data if not present
+// Initialize LocalStorage with seed data if not present or if candidates updated
 const initializeLocalStorage = () => {
-  if (!localStorage.getItem('pm_users')) {
+  const currentLocal = getLocal<User>('pm_users');
+  if (currentLocal.length < SEED_CANDIDATES.length) {
     setLocal('pm_users', SEED_CANDIDATES);
-    console.log("LocalStorage initialized with seed candidates.");
+    console.log("LocalStorage updated with latest seed candidates pool.");
   }
 };
 

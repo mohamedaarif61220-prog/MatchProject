@@ -1,19 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { User, Skill, SkillLevel } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { dbService } from '../services/db';
-import { Plus, X, UserCheck, CheckCircle2 } from 'lucide-react';
+import { Plus, X, UserCheck, CheckCircle2, Camera, Upload } from 'lucide-react';
 
 export const OnboardingPage: React.FC = () => {
   const { user, updateUserProfile } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState<string>(user?.name || '');
+  const [avatarUrl, setAvatarUrl] = useState<string>(user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.userId || 'User'}`);
   const [bio, setBio] = useState<string>(user?.bio || '');
   const [primaryRole, setPrimaryRole] = useState<string>(user?.primaryRole || 'Full Stack Developer');
   const [experience, setExperience] = useState<'Beginner' | 'Intermediate' | 'Advanced'>(user?.experience || 'Intermediate');
   const [availabilityHoursPerWeek, setAvailability] = useState<number>(user?.availabilityHoursPerWeek || 10);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size should be less than 5MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setAvatarUrl(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
   
   const [skills, setSkills] = useState<Skill[]>(user?.skills || [
     { name: 'React', level: 'Advanced' },
@@ -56,7 +76,7 @@ export const OnboardingPage: React.FC = () => {
       const updatedUser: User = {
         userId: user?.userId || 'demo_user',
         name: name.trim(),
-        avatarUrl: user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${name.trim()}`,
+        avatarUrl: avatarUrl || user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${name.trim()}`,
         bio: bio.trim(),
         primaryRole,
         skills,
@@ -107,6 +127,57 @@ export const OnboardingPage: React.FC = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Profile Photo Upload Panel */}
+          <div className="p-4 bg-obsidian-900/60 rounded-xl border border-slate-800 flex items-center gap-5">
+            <div className="relative group">
+              <img
+                src={avatarUrl}
+                alt="Profile Avatar"
+                className="w-16 h-16 rounded-2xl object-cover border-2 border-accent-cyan/40 bg-slate-800 shadow-md"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute inset-0 bg-black/60 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity"
+              >
+                <Camera className="w-5 h-5 text-accent-cyan" />
+              </button>
+            </div>
+
+            <div className="flex-1 space-y-1">
+              <label className="block text-xs font-semibold text-slate-200 uppercase">Profile Photo</label>
+              <p className="text-[11px] text-slate-400">
+                Upload a custom profile photo (PNG, JPG, WebP up to 5MB).
+              </p>
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/png, image/jpeg, image/webp"
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="btn-secondary text-xs !px-3 !py-1.5 flex items-center gap-1.5"
+                >
+                  <Upload className="w-3.5 h-3.5 text-accent-cyan" />
+                  <span>Upload Image</span>
+                </button>
+                {avatarUrl.startsWith('data:') && (
+                  <button
+                    type="button"
+                    onClick={() => setAvatarUrl(`https://api.dicebear.com/7.x/avataaars/svg?seed=${name.trim() || 'User'}`)}
+                    className="text-[11px] text-slate-400 hover:text-red-400 transition-colors px-2"
+                  >
+                    Remove Photo
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Basic Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

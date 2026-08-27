@@ -2,9 +2,9 @@ import type { User, Project } from '../types';
 
 export const SEED_CANDIDATES: User[] = [
   {
-    userId: "candidate_aarif",
-    name: "Aarif",
-    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aarif",
+    userId: "candidate_alex",
+    name: "Alex Vance",
+    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
     bio: "Full stack developer passionate about building high-performance web applications and databases.",
     primaryRole: "Full Stack Developer",
     skills: [
@@ -18,7 +18,7 @@ export const SEED_CANDIDATES: User[] = [
     preferredProjectTypes: ["Hackathon", "Startup"],
     availabilityHoursPerWeek: 15,
     preferredRoles: ["Frontend Developer", "Full Stack Developer"],
-    portfolioLinks: ["https://github.com/aarif-dev", "https://linkedin.com/in/aarif-dev"],
+    portfolioLinks: ["https://github.com/alex-dev", "https://linkedin.com/in/alex-dev"],
     createdAt: new Date().toISOString()
   },
   {
@@ -357,7 +357,7 @@ export const DEMO_PROJECT: Project = {
 };
 
 export const PRECOMPUTED_EXPLANATIONS: { [candidateId: string]: string } = {
-  candidate_aarif: "Excellent fit. Aarif has Advanced React and TypeScript skills, matching the project's frontend stack, plus Proficient Firebase knowledge to build data hooks.",
+  candidate_alex: "Excellent fit. Alex has Advanced React and TypeScript skills, matching the project's frontend stack, plus Proficient Firebase knowledge to build data hooks.",
   candidate_liam: "Strong fit. Liam possesses Advanced Python and Gemini API skills, which are critical to constructing the core SmartCampus AI processing services.",
   candidate_sophia: "Sophia is highly compatible as a designer. Her Figma and Wireframing skills cover the required layout designs, and her Tailwind skills complement the frontend implementation.",
   candidate_ethan: "Ethan offers strong PostgreSQL and SQL backing, reinforcing the project's backend capability and server stability, although he lacks direct Python/Gemini API focus.",

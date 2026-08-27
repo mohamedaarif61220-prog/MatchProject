@@ -174,9 +174,18 @@ export const DashboardPage: React.FC = () => {
             ) : (
               <div className="space-y-2">
                 {invitations.slice(0, 3).map(inv => (
-                  <div key={inv.invitationId} className="p-2.5 bg-obsidian-900 rounded-lg border border-slate-800 text-xs">
-                    <p className="text-slate-300 font-medium">Invitation from Team Lead</p>
-                    <span className="text-[10px] text-accent-cyan capitalize">{inv.status}</span>
+                  <div key={inv.invitationId} className="p-2.5 bg-obsidian-900 rounded-lg border border-slate-800 text-xs flex justify-between items-center">
+                    <div>
+                      <p className="text-slate-300 font-medium line-clamp-1">{inv.message || "Team Invitation"}</p>
+                      <span className="text-[10px] text-slate-500">
+                        {new Date(inv.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} at {new Date(inv.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded font-semibold capitalize shrink-0 ${
+                      inv.status === 'accepted' ? 'bg-emerald-500/20 text-emerald-300' : inv.status === 'declined' ? 'bg-red-500/20 text-red-300' : 'bg-indigo-500/20 text-indigo-300'
+                    }`}>
+                      {inv.status}
+                    </span>
                   </div>
                 ))}
               </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { CandidateMatch } from '../types';
 import { apiService } from '../services/api';
-import { Sparkles, Check, ChevronDown, ChevronUp, UserPlus } from 'lucide-react';
+import { Sparkles, Check, ChevronDown, ChevronUp, UserPlus, Send } from 'lucide-react';
 
 interface CandidateCardProps {
   candidateMatch: CandidateMatch;
@@ -9,6 +9,7 @@ interface CandidateCardProps {
   project: any;
   onPreviewImpact: (candidate: any) => void;
   onAddToTeam: (candidate: any) => void;
+  onSendInvite?: (candidate: any) => void;
   isAlreadyMember: boolean;
 }
 
@@ -18,6 +19,7 @@ export const CandidateMatchCard: React.FC<CandidateCardProps> = ({
   project,
   onPreviewImpact,
   onAddToTeam,
+  onSendInvite,
   isAlreadyMember
 }) => {
   const [expanded, setExpanded] = useState<boolean>(false);
@@ -88,6 +90,15 @@ export const CandidateMatchCard: React.FC<CandidateCardProps> = ({
               className="btn-secondary !px-3 !py-1.5 text-xs text-slate-300 hover:text-white"
             >
               Preview Impact
+            </button>
+
+            <button
+              onClick={() => onSendInvite ? onSendInvite(candidateUser) : onAddToTeam(candidateUser)}
+              className="btn-secondary !px-3 !py-1.5 text-xs text-accent-cyan hover:text-white border-accent-cyan/40 flex items-center gap-1"
+              title="Send direct invitation to candidate"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Invite</span>
             </button>
 
             <button

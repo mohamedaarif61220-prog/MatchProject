@@ -78,9 +78,21 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setCurrentTeam([]);
       }
 
-      // 2. Fetch candidates pool (all users except the current logged in user)
+      // 2. Fetch candidates pool (exclude any 'aarif' candidate or logged-in user profile)
       const allUsers = await dbService.getAllUsers();
-      const filteredCandidates = allUsers.filter(u => u.userId !== user.userId && u.userId !== 'demo_user');
+      const currentUserName = user.name?.toLowerCase().trim() || '';
+      const filteredCandidates = allUsers.filter(u => {
+        if (!u || !u.userId) return false;
+        if (u.userId === user.userId || u.userId === 'demo_user' || u.userId === 'candidate_aarif') return false;
+        
+        const candidateName = (u.name || '').toLowerCase().trim();
+        // Remove any candidate with name 'aarif' or matching current user
+        if (candidateName === 'aarif' || candidateName.startsWith('aarif ')) return false;
+        if (candidateName && currentUserName && (candidateName === currentUserName || candidateName === currentUserName.split(' ')[0])) {
+          return false;
+        }
+        return true;
+      });
       setCandidates(filteredCandidates);
 
       // 3. Fetch invitations
