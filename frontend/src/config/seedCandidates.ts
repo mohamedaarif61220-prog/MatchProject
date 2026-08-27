@@ -199,6 +199,127 @@ export const SEED_CANDIDATES: User[] = [
     preferredRoles: ["IoT Engineer", "Developer"],
     portfolioLinks: ["https://github.com/lucas-iot"],
     createdAt: new Date().toISOString()
+  },
+  {
+    userId: "candidate_harper",
+    name: "Harper Chen",
+    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Harper",
+    bio: "Cloud & DevOps Specialist with hands-on experience in AWS, CI/CD pipelines, and Terraform infrastructure as code.",
+    primaryRole: "Backend Developer",
+    skills: [
+      { name: "AWS", level: "Advanced" },
+      { name: "Docker", level: "Advanced" },
+      { name: "Terraform", level: "Intermediate" },
+      { name: "Node.js", level: "Proficient" },
+      { name: "Python", level: "Intermediate" }
+    ],
+    experience: "Advanced",
+    interests: ["DevOps", "Cloud Security", "Infrastructure"],
+    preferredProjectTypes: ["Startup", "Open Source", "Hackathon"],
+    availabilityHoursPerWeek: 16,
+    preferredRoles: ["Backend Developer", "DevOps Engineer"],
+    portfolioLinks: ["https://github.com/harper-devops", "https://linkedin.com/in/harper-cloud"],
+    createdAt: new Date().toISOString()
+  },
+  {
+    userId: "candidate_david",
+    name: "David Vance",
+    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=David",
+    bio: "Frontend engineer dedicated to responsive design, accessibility standards (a11y), and Vue.js / React micro-frontends.",
+    primaryRole: "Frontend Developer",
+    skills: [
+      { name: "React", level: "Advanced" },
+      { name: "Vue.js", level: "Advanced" },
+      { name: "Tailwind CSS", level: "Advanced" },
+      { name: "TypeScript", level: "Proficient" }
+    ],
+    experience: "Intermediate",
+    interests: ["Frontend", "Design Systems", "Web Performance"],
+    preferredProjectTypes: ["Hackathon", "Startup"],
+    availabilityHoursPerWeek: 14,
+    preferredRoles: ["Frontend Developer", "UI/UX Designer"],
+    portfolioLinks: ["https://github.com/davidvance-ui"],
+    createdAt: new Date().toISOString()
+  },
+  {
+    userId: "candidate_chloe",
+    name: "Chloe Miller",
+    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Chloe",
+    bio: "Data Scientist specialized in NLP, sentiment analysis, and predictive analytics using Pandas and Scikit-Learn.",
+    primaryRole: "AI/ML Developer",
+    skills: [
+      { name: "Python", level: "Advanced" },
+      { name: "Pandas", level: "Advanced" },
+      { name: "Scikit-Learn", level: "Advanced" },
+      { name: "Gemini API", level: "Intermediate" }
+    ],
+    experience: "Intermediate",
+    interests: ["Data Science", "AI", "Analytics"],
+    preferredProjectTypes: ["Research", "Hackathon"],
+    availabilityHoursPerWeek: 12,
+    preferredRoles: ["AI/ML Developer", "Data Engineer"],
+    portfolioLinks: ["https://github.com/chloe-ds"],
+    createdAt: new Date().toISOString()
+  },
+  {
+    userId: "candidate_marcus",
+    name: "Marcus Brody",
+    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus",
+    bio: "Web3 & Blockchain Architect with experience in Solidity smart contracts, Web3.js, and decentralized storage.",
+    primaryRole: "Backend Developer",
+    skills: [
+      { name: "Solidity", level: "Advanced" },
+      { name: "TypeScript", level: "Intermediate" },
+      { name: "Node.js", level: "Intermediate" },
+      { name: "Web3.js", level: "Advanced" }
+    ],
+    experience: "Advanced",
+    interests: ["Web3", "Blockchain", "DeFi"],
+    preferredProjectTypes: ["Hackathon", "Startup"],
+    availabilityHoursPerWeek: 15,
+    preferredRoles: ["Backend Developer", "Full Stack Developer"],
+    portfolioLinks: ["https://github.com/marcus-web3"],
+    createdAt: new Date().toISOString()
+  },
+  {
+    userId: "candidate_elena",
+    name: "Elena Rostova",
+    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Elena",
+    bio: "UX Researcher & Product Analyst focused on quantitative surveys, customer interviews, and wireframe prototypes.",
+    primaryRole: "UI/UX Designer",
+    skills: [
+      { name: "User Research", level: "Advanced" },
+      { name: "Figma", level: "Advanced" },
+      { name: "Prototyping", level: "Advanced" },
+      { name: "Agile", level: "Intermediate" }
+    ],
+    experience: "Intermediate",
+    interests: ["UI/UX", "User Research", "Product Design"],
+    preferredProjectTypes: ["College Project", "Hackathon", "Startup"],
+    availabilityHoursPerWeek: 10,
+    preferredRoles: ["UI/UX Designer", "Product Manager"],
+    portfolioLinks: ["https://dribbble.com/elena-ux"],
+    createdAt: new Date().toISOString()
+  },
+  {
+    userId: "candidate_samuel",
+    name: "Samuel Wright",
+    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Samuel",
+    bio: "Full stack generalist with strong background in GraphQL, Next.js, and PostgreSQL scalable APIs.",
+    primaryRole: "Full Stack Developer",
+    skills: [
+      { name: "React", level: "Advanced" },
+      { name: "GraphQL", level: "Intermediate" },
+      { name: "PostgreSQL", level: "Advanced" },
+      { name: "TypeScript", level: "Advanced" }
+    ],
+    experience: "Advanced",
+    interests: ["Full Stack", "APIs", "Open Source"],
+    preferredProjectTypes: ["Startup", "Open Source"],
+    availabilityHoursPerWeek: 18,
+    preferredRoles: ["Full Stack Developer", "Backend Developer"],
+    portfolioLinks: ["https://github.com/samuel-fullstack"],
+    createdAt: new Date().toISOString()
   }
 ];
 
