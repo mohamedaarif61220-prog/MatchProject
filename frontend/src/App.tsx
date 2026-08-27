@@ -30,7 +30,6 @@ function App() {
           <Link to="/" className="font-display text-xl font-bold tracking-tight flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-accent-cyan" />
             <span className="bg-gradient-to-r from-accent-cyan to-accent-ember bg-clip-text text-transparent">ProjectMatch</span>
-            <span className="text-[10px] bg-accent-purple/20 text-accent-purple px-2 py-0.5 rounded-full ml-1 stat-mono">MVP v1.0</span>
           </Link>
 
           <div className="flex gap-4 items-center">

@@ -23,6 +23,7 @@ interface AuthContextType {
   loginWithEmail: (email: string, pass: string) => Promise<void>;
   registerWithEmail: (email: string, pass: string, name?: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  updateUserProfile: (user: User) => void;
   logout: () => Promise<void>;
 }
 
@@ -199,7 +200,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (popupErr: any) {
+        // Fall back to redirect if popup is blocked or fails on mobile/certain browsers
+        if (popupErr?.code === 'auth/popup-blocked' || popupErr?.code === 'auth/popup-closed-by-user' || popupErr?.code === 'auth/cancelled-popup-request') {
+          const { signInWithRedirect } = await import('firebase/auth');
+          await signInWithRedirect(auth, provider);
+          return;
+        }
+        throw popupErr;
+      }
     } catch (err: any) {
       const msg = err?.code ? `Firebase: Error (${err.code}) ${err.message}` : (err?.message || "Google Authentication failed.");
       setError(msg);
@@ -227,6 +238,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUserProfile = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -239,6 +254,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loginWithEmail, 
       registerWithEmail, 
       loginWithGoogle, 
+      updateUserProfile,
       logout 
     }}>
       {children}

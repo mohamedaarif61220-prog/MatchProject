@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import type { User, Skill, SkillLevel } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { dbService } from '../services/db';
-import { Plus, X, UserCheck } from 'lucide-react';
+import { Plus, X, UserCheck, CheckCircle2 } from 'lucide-react';
 
 export const OnboardingPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, updateUserProfile } = useAuth();
   const navigate = useNavigate();
 
   const [name, setName] = useState<string>(user?.name || '');
@@ -27,8 +27,10 @@ export const OnboardingPage: React.FC = () => {
   const [preferredRolesText, setPrefRolesText] = useState<string>((user?.preferredRoles || ['Frontend Developer', 'Full Stack Developer']).join(', '));
 
   const [saving, setSaving] = useState<boolean>(false);
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
-  const handleAddSkill = () => {
+  const handleAddSkill = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) e.preventDefault();
     if (!newSkillName.trim()) return;
     const exists = skills.some(s => s.name.toLowerCase() === newSkillName.trim().toLowerCase());
     if (exists) return;
@@ -45,6 +47,7 @@ export const OnboardingPage: React.FC = () => {
     if (!name.trim()) return;
 
     setSaving(true);
+    setSaveSuccess(false);
     try {
       const interests = interestsText.split(',').map(s => s.trim()).filter(Boolean);
       const preferredProjectTypes = preferredProjectTypesText.split(',').map(s => s.trim()).filter(Boolean);
@@ -67,8 +70,15 @@ export const OnboardingPage: React.FC = () => {
         updatedAt: new Date().toISOString()
       };
 
+      // 1. Persist to database (Firestore / localStorage)
       await dbService.saveUserProfile(updatedUser);
-      navigate('/dashboard');
+      // 2. Immediately update in AuthContext React state
+      updateUserProfile(updatedUser);
+
+      setSaveSuccess(true);
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 600);
     } catch (err) {
       console.error("Failed to save profile:", err);
     } finally {
@@ -88,6 +98,13 @@ export const OnboardingPage: React.FC = () => {
             <p className="text-xs text-slate-400">Configure your profile attributes for deterministic match calculations.</p>
           </div>
         </div>
+
+        {saveSuccess && (
+          <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-3 text-sm text-emerald-400">
+            <CheckCircle2 className="w-5 h-5 shrink-0" />
+            <span>Profile saved successfully! Redirecting to dashboard...</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Info */}
@@ -161,7 +178,13 @@ export const OnboardingPage: React.FC = () => {
                 type="text"
                 value={newSkillName}
                 onChange={e => setNewSkillName(e.target.value)}
-                placeholder="Skill name (e.g. Python)"
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddSkill(e);
+                  }
+                }}
+                placeholder="Skill name (e.g. Python) — press Enter to add"
                 className="flex-1 bg-obsidian-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-accent-cyan"
               />
               <select
@@ -260,3 +283,4 @@ export const OnboardingPage: React.FC = () => {
     </div>
   );
 };
+
