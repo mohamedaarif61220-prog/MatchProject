@@ -88,13 +88,31 @@ export const dbService = {
   },
 
   async getAllUsers(): Promise<User[]> {
+    let dbUsers: User[] = [];
     if (isFirebaseConfigured && db) {
-      const usersRef = collection(db, 'users');
-      const snapshot = await getDocs(usersRef);
-      return snapshot.docs.map(d => d.data() as User);
+      try {
+        const usersRef = collection(db, 'users');
+        const snapshot = await getDocs(usersRef);
+        dbUsers = snapshot.docs.map(d => d.data() as User);
+      } catch (err) {
+        console.error("Error fetching Firestore users:", err);
+      }
     } else {
-      return getLocal<User>('pm_users');
+      dbUsers = getLocal<User>('pm_users');
     }
+
+    // Merge SEED_CANDIDATES so demo candidates are always present alongside registered users
+    const seedCandidates = SEED_CANDIDATES || [];
+    const mergedMap = new Map<string, User>();
+    
+    // 1. Add seed candidates
+    seedCandidates.forEach(u => mergedMap.set(u.userId, u));
+    // 2. Add/overwrite with real database users
+    dbUsers.forEach(u => {
+      if (u && u.userId) mergedMap.set(u.userId, u);
+    });
+
+    return Array.from(mergedMap.values());
   },
 
   // --- Projects ---
