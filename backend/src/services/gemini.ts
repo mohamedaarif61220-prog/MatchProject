@@ -363,5 +363,143 @@ ${JSON.stringify(sanitizedPool, null, 2)}
       console.error('Gemini recommendTeamImprovement failed, using fallback:', e);
       return buildLocalRecommendation();
     }
+  },
+
+  async auditProjectFeasibility(
+    project: any,
+    currentTeam: any[]
+  ): Promise<{ riskScore: number; riskLevel: 'Low' | 'Medium' | 'High'; feasibilitySummary: string; recommendations: string[] }> {
+    const buildLocalAudit = () => {
+      const teamCount = currentTeam.length;
+      const targetSize = project.teamSize || 4;
+      const coverageRatio = teamCount / targetSize;
+
+      let riskScore = 20;
+      let riskLevel: 'Low' | 'Medium' | 'High' = 'Low';
+      const recommendations: string[] = [];
+
+      if (teamCount === 1) {
+        riskScore = 75;
+        riskLevel = 'High';
+        recommendations.push("Solo team detected: Recruiter at least 1 Frontend and 1 Backend/AI developer before hackathon deadline.");
+        recommendations.push("Consider scoping down UI deliverables and using pre-built UI components like Tailwind/Shadcn.");
+      } else if (coverageRatio < 0.8) {
+        riskScore = 45;
+        riskLevel = 'Medium';
+        recommendations.push(`Team has ${teamCount}/${targetSize} members. Recruit remaining key roles to avoid bottlenecking.`);
+        recommendations.push("Focus early hackathon hours on establishing API contracts and database schema.");
+      } else {
+        riskScore = 15;
+        riskLevel = 'Low';
+        recommendations.push("Team composition is highly balanced across primary roles.");
+        recommendations.push("Schedule early dry-run presentation 3 hours before hackathon submission.");
+      }
+
+      recommendations.push("Keep core feature set minimal and prioritize end-to-end working MVP video.");
+
+      return {
+        riskScore,
+        riskLevel,
+        feasibilitySummary: `Feasibility Audit for ${project.name}: Current team of ${teamCount} member(s) evaluating a ${project.complexity || 'intermediate'} scope. ${riskLevel} implementation risk based on skill distribution.`,
+        recommendations
+      };
+    };
+
+    if (!isRealApiKey || !genAI) {
+      return buildLocalAudit();
+    }
+
+    try {
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const prompt = `
+You are an expert AI Hackathon Pitch Doctor & Architecture Advisor.
+Evaluate the feasibility of this software project based on the current team:
+
+Project Name: ${project.name}
+Project Description: ${project.description || ''}
+Target Team Size: ${project.teamSize || 4}
+Required Skills: ${(project.requiredSkills || []).map((s: any) => s.name).join(', ')}
+Required Roles: ${(project.requiredRoles || []).map((r: any) => r.name).join(', ')}
+
+Current Team Members:
+${JSON.stringify(currentTeam.map(m => ({ name: m.name, role: m.primaryRole, skills: m.skills.map((s: any) => s.name) })), null, 2)}
+
+Return ONLY valid JSON in this exact structure:
+{
+  "riskScore": 25,
+  "riskLevel": "Low",
+  "feasibilitySummary": "Concise summary of team readiness and scope risk",
+  "recommendations": ["Recommendation 1", "Recommendation 2", "Recommendation 3"]
+}
+`.trim();
+
+      const result = await model.generateContent(prompt);
+      const cleanText = result.response.text().replace(/```json|```/g, '').trim();
+      return JSON.parse(cleanText);
+    } catch (e) {
+      console.error("Gemini feasibility audit failed, using fallback:", e);
+      return buildLocalAudit();
+    }
+  async chatProjectAssistant(
+    messages: Array<{ sender: 'user' | 'assistant'; text: string }>,
+    projectName?: string,
+    currentDescription?: string
+  ): Promise<{ reply: string; suggestedDescription?: string }> {
+    const buildLocalReply = () => {
+      const lastUserMsg = [...messages].reverse().find(m => m.sender === 'user')?.text || '';
+      const lower = lastUserMsg.toLowerCase();
+
+      let reply = `Great ideas! To make your project description clear for team recruitment, focus on your core features, key technologies, and primary user value proposition.`;
+      let suggestedDescription: string | undefined = undefined;
+
+      if (lower.includes('smartcampus') || lower.includes('campus') || lower.includes('student')) {
+        suggestedDescription = `Build an AI-powered smart campus portal and mobile assistant for students to find live lecture halls, campus events, academic notices, and personalized study group recommendations using React, Node.js, Python, and Gemini AI APIs.`;
+        reply = `I've updated your description with a clear campus assistant breakdown! Click "Apply to Description" to use it.`;
+      } else if (lower.includes('tech') || lower.includes('stack') || lower.includes('react') || lower.includes('python')) {
+        suggestedDescription = `${currentDescription || ''} Built using modern full-stack web technologies including React, TypeScript, Node.js, and AI API integrations to deliver high reliability and intuitive UI.`;
+        reply = `Added technical stack specifications to your project description!`;
+      } else if (lastUserMsg.length > 10) {
+        suggestedDescription = `${currentDescription ? currentDescription + ' ' : ''}${lastUserMsg.trim()}`;
+        reply = `I've incorporated your feedback into a refined project description. Take a look below!`;
+      }
+
+      return { reply, suggestedDescription };
+    };
+
+    if (!isRealApiKey || !genAI) {
+      return buildLocalReply();
+    }
+
+    try {
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const conversationHistory = messages.map(m => `${m.sender === 'user' ? 'User' : 'Assistant'}: ${m.text}`).join('\n');
+      
+      const prompt = `
+You are an expert AI Project Co-Pilot helping a project creator refine and write a high-impact, professional project description for team recruitment.
+
+Project Name: ${projectName || 'Untitled Project'}
+Current Project Description: "${currentDescription || 'Not specified yet'}"
+
+Conversation History:
+${conversationHistory}
+
+Task:
+1. Provide a helpful, concise assistant response answering the user's questions or asking clarifying questions about target users, core features, or technical stack.
+2. If the user provides new details or asks you to write/improve the description, generate a polished 2-4 sentence project description.
+
+Return ONLY valid JSON in this exact structure:
+{
+  "reply": "Your helpful response to the user here...",
+  "suggestedDescription": "Optional refined project description if applicable, or omit if just conversing"
+}
+`.trim();
+
+      const result = await model.generateContent(prompt);
+      const cleanText = result.response.text().replace(/```json|```/g, '').trim();
+      return JSON.parse(cleanText);
+    } catch (e) {
+      console.error("Gemini chatProjectAssistant failed, using local fallback:", e);
+      return buildLocalReply();
+    }
   }
 };

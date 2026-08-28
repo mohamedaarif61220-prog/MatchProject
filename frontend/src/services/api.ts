@@ -241,5 +241,105 @@ export const apiService = {
         reasoning: "No available candidates to recommend."
       };
     }
+  },
+
+  async auditProjectFeasibility(
+    project: any,
+    currentTeam: User[]
+  ): Promise<{ riskScore: number; riskLevel: 'Low' | 'Medium' | 'High'; feasibilitySummary: string; recommendations: string[] }> {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const res = await fetch(`${API_BASE}/audit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project, currentTeam }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+      if (!res.ok) throw new Error("Backend audit API failed.");
+      return await res.json();
+    } catch (e) {
+      console.warn("Backend feasibility audit failed, fallback to local analysis:", e);
+
+      const teamCount = currentTeam.length;
+      const targetSize = project.teamSize || 4;
+      const coverageRatio = teamCount / targetSize;
+
+      let riskScore = 20;
+      let riskLevel: 'Low' | 'Medium' | 'High' = 'Low';
+      const recommendations: string[] = [];
+
+      if (teamCount === 1) {
+        riskScore = 70;
+        riskLevel = 'High';
+        recommendations.push("Solo team: Recruit at least 1 Frontend and 1 Backend/AI developer before hackathon deadline.");
+        recommendations.push("Scope down complex backend microservices and leverage serverless / Firebase APIs.");
+      } else if (coverageRatio < 0.8) {
+        riskScore = 40;
+        riskLevel = 'Medium';
+        recommendations.push(`Team currently has ${teamCount}/${targetSize} members. Invite remaining key candidate roles.`);
+        recommendations.push("Establish API schema contracts early to prevent frontend/backend integration delays.");
+      } else {
+        riskScore = 15;
+        riskLevel = 'Low';
+        recommendations.push("Team role distribution is well balanced across primary skill sets.");
+        recommendations.push("Schedule a dry-run presentation 3 hours prior to submission.");
+      }
+
+      recommendations.push("Keep MVP feature scope constrained to core user journey to ensure demo stability.");
+
+      return {
+        riskScore,
+        riskLevel,
+        feasibilitySummary: `Feasibility Audit for ${project.name}: Current team of ${teamCount} member(s) evaluating a ${project.complexity || 'intermediate'} scope. ${riskLevel} implementation risk.`,
+        recommendations
+      };
+    }
+  },
+
+  async chatProjectAssistant(
+    messages: Array<{ sender: 'user' | 'assistant'; text: string }>,
+    projectName?: string,
+    currentDescription?: string
+  ): Promise<{ reply: string; suggestedDescription?: string }> {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const res = await fetch(`${API_BASE}/chat-assistant`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages, projectName, currentDescription }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+      if (!res.ok) throw new Error("Backend chat assistant API failed.");
+      return await res.json();
+    } catch (e) {
+      console.warn("Backend chat assistant failed, fallback to local intelligent response:", e);
+
+      const lastUserMsg = [...messages].reverse().find(m => m.sender === 'user')?.text || '';
+      const lower = lastUserMsg.toLowerCase();
+
+      let reply = `That sounds like a great direction! To attract the right team members, be sure to highlight your core problem, primary features, and intended tech stack.`;
+      let suggestedDescription: string | undefined = undefined;
+
+      if (lower.includes('smartcampus') || lower.includes('campus') || lower.includes('student')) {
+        suggestedDescription = `Build an AI-powered smart campus portal and mobile assistant for students to find live lecture halls, campus events, academic notices, and personalized study group recommendations using React, Node.js, Python, and Gemini AI APIs.`;
+        reply = `I've prepared a comprehensive SmartCampus description for you! Click "Apply to Description" to insert it into your project form.`;
+      } else if (lower.includes('tech') || lower.includes('stack') || lower.includes('react') || lower.includes('python')) {
+        suggestedDescription = `${currentDescription || ''} Powered by a robust modern tech stack including React, TypeScript, Node.js, and AI integrations for seamless user experience.`;
+        reply = `Added technical stack details to your description! Click "Apply to Description" to update your form.`;
+      } else if (lastUserMsg.length > 10) {
+        suggestedDescription = `${currentDescription ? currentDescription + '\n\n' : ''}${lastUserMsg.trim()}`;
+        reply = `I've incorporated your feedback into a updated project description below.`;
+      }
+
+      return { reply, suggestedDescription };
+    }
   }
 };

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppState } from '../context/AppStateContext';
 import { DEMO_PROJECT } from '../config/seedCandidates';
 import { apiService } from '../services/api';
-import { Sparkles, Zap, ArrowRight, FolderPlus } from 'lucide-react';
+import { Sparkles, Zap, ArrowRight, FolderPlus, Bot, Send, CheckCircle2 } from 'lucide-react';
 
 export const CreateProjectPage: React.FC = () => {
   const { createProject, setActiveProject } = useAppState();
@@ -18,12 +18,49 @@ export const CreateProjectPage: React.FC = () => {
 
   const [analyzing, setAnalyzing] = useState<boolean>(false);
 
+  // AI Assistant Chat State
+  const [showAssistant, setShowAssistant] = useState<boolean>(false);
+  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'user' | 'assistant'; text: string; suggestedDesc?: string }>>([
+    {
+      sender: 'assistant',
+      text: "Hi! I'm your Gemini AI Co-Pilot. Tell me about your project idea or target goals, and I'll help you write a high-impact description to recruit top candidates!"
+    }
+  ]);
+  const [inputMsg, setInputMsg] = useState<string>('');
+  const [sendingChat, setSendingChat] = useState<boolean>(false);
+
   const handleAutofillDemo = () => {
     setName(DEMO_PROJECT.name);
     setDescription(DEMO_PROJECT.description);
     setProjectType(DEMO_PROJECT.projectType);
     setTeamSize(DEMO_PROJECT.teamSize);
     setRequiredHours(DEMO_PROJECT.requiredHoursPerWeek);
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputMsg.trim() || sendingChat) return;
+
+    const userText = inputMsg.trim();
+    const newMessages = [...chatMessages, { sender: 'user' as const, text: userText }];
+    setChatMessages(newMessages);
+    setInputMsg('');
+    setSendingChat(true);
+
+    try {
+      const res = await apiService.chatProjectAssistant(newMessages, name, description);
+      setChatMessages(prev => [
+        ...prev,
+        { sender: 'assistant', text: res.reply, suggestedDesc: res.suggestedDescription }
+      ]);
+      if (res.suggestedDescription && !description) {
+        setDescription(res.suggestedDescription);
+      }
+    } catch (err) {
+      console.error("AI Assistant chat failed:", err);
+    } finally {
+      setSendingChat(false);
+    }
   };
 
   const handleAnalyzeAndCreate = async (e: React.FormEvent) => {
@@ -66,16 +103,17 @@ export const CreateProjectPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-12 px-6">
-      <div className="glass-panel p-8 rounded-2xl border border-slate-800 shadow-2xl relative overflow-hidden">
-        <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
+    <div className="max-w-4xl mx-auto py-10 px-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {/* Main Creation Form (7 cols) */}
+      <div className="lg:col-span-7 glass-panel p-8 rounded-2xl border border-slate-800 shadow-2xl relative overflow-hidden space-y-6">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-accent-cyan/10 flex items-center justify-center text-accent-cyan font-bold">
               <FolderPlus className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-xl font-bold text-white font-display">Create New Project</h2>
-              <p className="text-xs text-slate-400">Describe your goals to extract structured requirements with Gemini AI.</p>
+              <p className="text-xs text-slate-400">Extract structured roles & tech stack with AI.</p>
             </div>
           </div>
 
@@ -103,20 +141,30 @@ export const CreateProjectPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
-              Project Description (Primary AI Input)
-            </label>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="block text-xs font-semibold text-slate-300 uppercase">
+                Project Description (Primary AI Input)
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowAssistant(prev => !prev)}
+                className="text-[11px] text-accent-cyan hover:underline flex items-center gap-1 font-semibold"
+              >
+                <Bot className="w-3.5 h-3.5" />
+                <span>{showAssistant ? 'Hide AI Co-Pilot' : 'Need Help Writing?'}</span>
+              </button>
+            </div>
             <textarea
               required
-              rows={4}
+              rows={5}
               value={description}
               onChange={e => setDescription(e.target.value)}
-              placeholder="Detail the target goals, core tech stack, scope, and key deliverables of your project..."
+              placeholder="Detail target goals, tech stack, scope, and deliverables..."
               className="w-full bg-obsidian-900 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-accent-cyan resize-none leading-relaxed"
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">Project Type</label>
               <select
@@ -146,7 +194,7 @@ export const CreateProjectPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">Weekly Commitment</label>
+              <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">Weekly Hours</label>
               <input
                 type="number"
                 min={1}
@@ -180,6 +228,79 @@ export const CreateProjectPage: React.FC = () => {
           </div>
         </form>
       </div>
+
+      {/* AI Assistant Chat Side Panel (5 cols) */}
+      <div className="lg:col-span-5 glass-panel p-5 rounded-2xl border border-slate-800 space-y-4 sticky top-24">
+        <div className="flex justify-between items-center pb-3 border-b border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+              <Bot className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white font-display">Gemini AI Co-Pilot</h3>
+              <p className="text-[10px] text-slate-400">Ask questions or brainstorm ideas</p>
+            </div>
+          </div>
+
+          <span className="text-[10px] font-bold uppercase px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full">
+            Active
+          </span>
+        </div>
+
+        {/* Chat History Messages */}
+        <div className="h-72 overflow-y-auto space-y-3 pr-1 text-xs">
+          {chatMessages.map((msg, idx) => (
+            <div
+              key={idx}
+              className={`p-3 rounded-xl border space-y-2 ${
+                msg.sender === 'user'
+                  ? 'bg-indigo-600/20 border-indigo-500/30 text-indigo-100 ml-6'
+                  : 'bg-obsidian-900 border-slate-800 text-slate-200 mr-4'
+              }`}
+            >
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-slate-400">
+                {msg.sender === 'user' ? 'You' : 'AI Assistant'}
+              </div>
+              <p className="leading-relaxed">{msg.text}</p>
+
+              {msg.suggestedDesc && (
+                <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                  <div className="p-2 bg-obsidian-950 rounded border border-slate-800 text-[11px] text-accent-cyan italic">
+                    "{msg.suggestedDesc}"
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDescription(msg.suggestedDesc!)}
+                    className="w-full py-1.5 bg-accent-cyan/20 hover:bg-accent-cyan/30 text-accent-cyan border border-accent-cyan/40 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Apply to Description</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Message Input Box */}
+        <form onSubmit={handleSendMessage} className="flex gap-2 pt-2 border-t border-slate-800">
+          <input
+            type="text"
+            placeholder="Ask AI: e.g., 'Make it sound like a startup'..."
+            value={inputMsg}
+            onChange={e => setInputMsg(e.target.value)}
+            className="flex-1 bg-obsidian-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-accent-cyan"
+          />
+          <button
+            type="submit"
+            disabled={sendingChat || !inputMsg.trim()}
+            className="btn-primary !px-3 !py-2 text-xs font-bold flex items-center gap-1"
+          >
+            <Send className="w-3.5 h-3.5" />
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
+

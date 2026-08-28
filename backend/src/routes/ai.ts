@@ -80,4 +80,44 @@ router.post('/improve-team', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Endpoint: POST /api/audit
+ * Payload: { project: object, currentTeam: array }
+ */
+router.post('/audit', async (req: Request, res: Response) => {
+  const { project, currentTeam } = req.body;
+
+  if (!project || !currentTeam) {
+    return res.status(400).json({ error: "Missing parameters. Required fields: 'project', 'currentTeam'." });
+  }
+
+  try {
+    const audit = await geminiService.auditProjectFeasibility(project, currentTeam);
+    return res.json(audit);
+  } catch (error: any) {
+    console.error("Route error in /api/audit:", error);
+    return res.status(500).json({ error: error.message || "Failed to generate feasibility audit." });
+  }
+});
+
+/**
+ * Endpoint: POST /api/chat-assistant
+ * Payload: { messages: Array<{ sender: 'user' | 'assistant', text: string }>, projectName?: string, currentDescription?: string }
+ */
+router.post('/chat-assistant', async (req: Request, res: Response) => {
+  const { messages, projectName, currentDescription } = req.body;
+
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(400).json({ error: "Invalid payload. 'messages' array is required." });
+  }
+
+  try {
+    const response = await geminiService.chatProjectAssistant(messages, projectName, currentDescription);
+    return res.json(response);
+  } catch (error: any) {
+    console.error("Route error in /api/chat-assistant:", error);
+    return res.status(500).json({ error: error.message || "Chat assistant error." });
+  }
+});
+
 export default router;

@@ -9,7 +9,8 @@ import { ProjectAnalysisPage } from './pages/ProjectAnalysisPage';
 import { TeamBuilderPage } from './pages/TeamBuilderPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { InvitationsPage } from './pages/InvitationsPage';
-import { Sparkles } from 'lucide-react';
+import { PublicShowcasePage } from './pages/PublicShowcasePage';
+import { Sparkles, Rocket } from 'lucide-react';
 
 // Guard for protected application routes
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -37,6 +38,10 @@ function App() {
               <>
                 <Link to="/dashboard" className="text-xs font-semibold text-slate-300 hover:text-teal-400 transition-colors">
                   Dashboard
+                </Link>
+                <Link to="/showcase" className="text-xs font-semibold text-slate-300 hover:text-teal-400 transition-colors flex items-center gap-1">
+                  <Rocket className="w-3.5 h-3.5 text-accent-cyan" />
+                  <span>Showcase</span>
                 </Link>
                 <Link to="/onboarding" className="text-xs font-semibold text-slate-300 hover:text-teal-400 transition-colors">
                   Profile
@@ -101,6 +106,12 @@ function App() {
             <Route path="/invitations" element={
               <ProtectedRoute>
                 <InvitationsPage />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/showcase" element={
+              <ProtectedRoute>
+                <PublicShowcasePage />
               </ProtectedRoute>
             } />
 

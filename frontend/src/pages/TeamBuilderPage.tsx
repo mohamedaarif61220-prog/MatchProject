@@ -8,7 +8,7 @@ import { CandidateMatchCard } from '../components/CandidateMatchCard';
 import { WhatIfModal } from '../components/WhatIfModal';
 import { apiService } from '../services/api';
 import type { User, WhatIfTeamImpact } from '../types';
-import { Sparkles, Users, Layers, ShieldCheck, AlertTriangle, Trash2, Send, X } from 'lucide-react';
+import { Sparkles, Users, Layers, ShieldCheck, AlertTriangle, Trash2, Send, X, Activity, CheckCircle, ShieldAlert } from 'lucide-react';
 
 export const TeamBuilderPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -18,6 +18,15 @@ export const TeamBuilderPage: React.FC = () => {
 
   const [previewCandidate, setPreviewCandidate] = useState<User | null>(null);
   const [previewImpact, setPreviewImpact] = useState<WhatIfTeamImpact | null>(null);
+
+  // Feasibility Audit state
+  const [auditModal, setAuditModal] = useState<{
+    riskScore: number;
+    riskLevel: 'Low' | 'Medium' | 'High';
+    feasibilitySummary: string;
+    recommendations: string[];
+  } | null>(null);
+  const [loadingAudit, setLoadingAudit] = useState<boolean>(false);
 
   // Invite modal state
   const [inviteModalCandidate, setInviteModalCandidate] = useState<User | null>(null);
@@ -129,26 +138,51 @@ export const TeamBuilderPage: React.FC = () => {
     }
   };
 
+  const handleRunAudit = async () => {
+    setLoadingAudit(true);
+    try {
+      const res = await apiService.auditProjectFeasibility(project, effectiveTeam);
+      setAuditModal(res);
+    } catch (e) {
+      console.error("Failed to run feasibility audit:", e);
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto py-8 px-6 space-y-8">
-      {/* Top Bar Navigation & Team Score Badge */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      {/* Top Banner & Control Dashboard */}
+      <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
-            <Link to="/dashboard" className="hover:text-accent-cyan">Dashboard</Link>
-            <span>/</span>
+          <div className="text-xs text-slate-400 font-medium flex items-center gap-2 mb-1">
+            <Link to="/dashboard" className="hover:text-white">Dashboard</Link> / 
             <span className="text-slate-200">{project.name}</span>
           </div>
           <h2 className="text-2xl font-bold text-white font-display">Interactive Team Builder</h2>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           <div className="flex flex-col items-end">
             <span className="text-3xl font-extrabold text-accent-cyan font-display">
               {teamMetrics.teamCompatibility}%
             </span>
             <span className="text-[10px] uppercase font-semibold text-slate-400">Team Compatibility Score</span>
           </div>
+
+          <button
+            onClick={handleRunAudit}
+            disabled={loadingAudit}
+            className="btn-secondary px-4 py-2.5 text-xs font-bold text-amber-300 hover:text-amber-200 border-amber-500/30 flex items-center gap-2"
+            title="Run AI Pitch Doctor Scope & Risk Audit"
+          >
+            {loadingAudit ? (
+              <div className="w-3.5 h-3.5 border-2 border-amber-300 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Activity className="w-4 h-4 text-amber-400" />
+            )}
+            <span>{loadingAudit ? 'Auditing...' : 'AI Pitch Doctor'}</span>
+          </button>
 
           <button
             onClick={handleImproveMyTeam}
@@ -467,6 +501,86 @@ export const TeamBuilderPage: React.FC = () => {
         <div className="fixed bottom-6 right-6 z-50 p-4 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl text-emerald-300 text-xs font-bold shadow-2xl flex items-center gap-2 animate-bounce">
           <ShieldCheck className="w-4 h-4" />
           <span>{inviteSentToast}</span>
+        </div>
+      )}
+
+      {/* AI Pitch Doctor Feasibility Audit Modal */}
+      {auditModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-panel max-w-xl w-full p-6 sm:p-7 rounded-2xl border border-slate-800 shadow-2xl space-y-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-500 via-accent-cyan to-indigo-500" />
+
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <Activity className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white font-display flex items-center gap-2">
+                    <span>AI Pitch Doctor Audit</span>
+                  </h3>
+                  <p className="text-xs text-slate-400">Scope feasibility & project risk assessment</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setAuditModal(null)}
+                className="text-slate-500 hover:text-white p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Risk Gauge Header */}
+            <div className="p-4 bg-obsidian-900 rounded-xl border border-slate-800 flex justify-between items-center">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Execution Risk Level</span>
+                <span className={`text-base font-extrabold flex items-center gap-1.5 ${
+                  auditModal.riskLevel === 'Low' ? 'text-emerald-400' : auditModal.riskLevel === 'Medium' ? 'text-amber-400' : 'text-rose-400'
+                }`}>
+                  {auditModal.riskLevel === 'Low' ? <CheckCircle className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4" />}
+                  <span>{auditModal.riskLevel} Risk ({auditModal.riskScore}%)</span>
+                </span>
+              </div>
+
+              <div className="text-right">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Target Project</span>
+                <span className="text-xs font-bold text-slate-200">{project.name}</span>
+              </div>
+            </div>
+
+            {/* Feasibility Summary */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Feasibility Diagnosis</h4>
+              <p className="text-xs text-slate-300 bg-obsidian-950 p-3.5 rounded-xl border border-slate-800/80 leading-relaxed">
+                {auditModal.feasibilitySummary}
+              </p>
+            </div>
+
+            {/* Strategic Recommendations */}
+            <div className="space-y-2.5">
+              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Architectural Recommendations</h4>
+              <div className="space-y-2">
+                {auditModal.recommendations.map((rec, idx) => (
+                  <div key={idx} className="p-3 bg-slate-900/60 rounded-xl border border-slate-800/60 text-xs text-slate-200 flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-accent-cyan/10 text-accent-cyan font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                      {idx + 1}
+                    </span>
+                    <span className="leading-relaxed">{rec}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                onClick={() => setAuditModal(null)}
+                className="btn-primary w-full py-2.5 text-xs font-bold"
+              >
+                Close Audit Report
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

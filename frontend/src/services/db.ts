@@ -157,6 +157,21 @@ export const dbService = {
     }
   },
 
+  async getAllPublicProjects(): Promise<Project[]> {
+    if (isFirebaseConfigured && db) {
+      try {
+        const projectsRef = collection(db, 'projects');
+        const snapshot = await getDocs(projectsRef);
+        return snapshot.docs.map(d => d.data() as Project);
+      } catch (err) {
+        console.error("Error fetching Firestore public projects:", err);
+        return getLocal<Project>('pm_projects');
+      }
+    } else {
+      return getLocal<Project>('pm_projects');
+    }
+  },
+
   // --- Project Members (Subcollection) ---
 
   async getProjectMembers(projectId: string): Promise<ProjectMember[]> {
