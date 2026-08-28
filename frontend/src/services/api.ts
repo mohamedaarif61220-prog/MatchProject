@@ -325,18 +325,24 @@ export const apiService = {
       const lastUserMsg = [...messages].reverse().find(m => m.sender === 'user')?.text || '';
       const lower = lastUserMsg.toLowerCase();
 
-      let reply = `That sounds like a great direction! To attract the right team members, be sure to highlight your core problem, primary features, and intended tech stack.`;
+      let reply = `That's a great question! For a project like ${projectName || 'this'}, focus on breaking down your core features into MVP stages, choosing a reliable tech stack, and defining key team roles early.`;
       let suggestedDescription: string | undefined = undefined;
 
-      if (lower.includes('smartcampus') || lower.includes('campus') || lower.includes('student')) {
+      if (lower.includes('hi') || lower.includes('hello') || lower.includes('hey')) {
+        reply = `Hello! How can I assist you with your project today? You can ask me for tech stack advice, feature ideas, team role recommendations, or help drafting your description.`;
+      } else if (lower.includes('role') || lower.includes('team') || lower.includes('who should i recruit')) {
+        reply = `For a typical software or hackathon project, a balanced team includes: 1 Full Stack Developer, 1 UI/UX Designer, 1 Backend/AI Specialist, and 1 Product Lead.`;
+      } else if (lower.includes('database') || lower.includes('backend') || lower.includes('firebase') || lower.includes('sql')) {
+        reply = `For fast prototyping and hackathons, Firebase or Supabase is ideal due to built-in auth and real-time database capabilities. For complex queries, PostgreSQL with Node.js/Express is a great choice!`;
+      } else if (lower.includes('smartcampus') || lower.includes('campus') || lower.includes('student')) {
         suggestedDescription = `Build an AI-powered smart campus portal and mobile assistant for students to find live lecture halls, campus events, academic notices, and personalized study group recommendations using React, Node.js, Python, and Gemini AI APIs.`;
         reply = `I've prepared a comprehensive SmartCampus description for you! Click "Apply to Description" to insert it into your project form.`;
       } else if (lower.includes('tech') || lower.includes('stack') || lower.includes('react') || lower.includes('python')) {
         suggestedDescription = `${currentDescription || ''} Powered by a robust modern tech stack including React, TypeScript, Node.js, and AI integrations for seamless user experience.`;
         reply = `Added technical stack details to your description! Click "Apply to Description" to update your form.`;
-      } else if (lastUserMsg.length > 10) {
+      } else if (lastUserMsg.length > 8) {
         suggestedDescription = `${currentDescription ? currentDescription + '\n\n' : ''}${lastUserMsg.trim()}`;
-        reply = `I've incorporated your feedback into a updated project description below.`;
+        reply = `Got it! I've updated your proposed project description below based on your input.`;
       }
 
       return { reply, suggestedDescription };

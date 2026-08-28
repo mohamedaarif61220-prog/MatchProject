@@ -449,18 +449,24 @@ Return ONLY valid JSON in this exact structure:
       const lastUserMsg = [...messages].reverse().find(m => m.sender === 'user')?.text || '';
       const lower = lastUserMsg.toLowerCase();
 
-      let reply = `Great ideas! To make your project description clear for team recruitment, focus on your core features, key technologies, and primary user value proposition.`;
+      let reply = `That's a great question! For a project like ${projectName || 'this'}, focus on breaking down your core features into MVP stages, choosing a reliable tech stack, and defining key team roles early.`;
       let suggestedDescription: string | undefined = undefined;
 
-      if (lower.includes('smartcampus') || lower.includes('campus') || lower.includes('student')) {
+      if (lower.includes('hi') || lower.includes('hello') || lower.includes('hey')) {
+        reply = `Hello! How can I assist you with your project today? You can ask me for tech stack advice, feature ideas, team role recommendations, or help drafting your description.`;
+      } else if (lower.includes('role') || lower.includes('team') || lower.includes('who should i recruit')) {
+        reply = `For a typical software or hackathon project, a balanced team includes: 1 Full Stack Developer, 1 UI/UX Designer, 1 Backend/AI Specialist, and 1 Product Lead.`;
+      } else if (lower.includes('database') || lower.includes('backend') || lower.includes('firebase') || lower.includes('sql')) {
+        reply = `For fast prototyping and hackathons, Firebase or Supabase is ideal due to built-in auth and real-time database capabilities. For complex queries, PostgreSQL with Node.js/Express is a great choice!`;
+      } else if (lower.includes('smartcampus') || lower.includes('campus') || lower.includes('student')) {
         suggestedDescription = `Build an AI-powered smart campus portal and mobile assistant for students to find live lecture halls, campus events, academic notices, and personalized study group recommendations using React, Node.js, Python, and Gemini AI APIs.`;
-        reply = `I've updated your description with a clear campus assistant breakdown! Click "Apply to Description" to use it.`;
+        reply = `I've prepared a comprehensive SmartCampus description for you! Click "Apply to Description" to insert it into your project form.`;
       } else if (lower.includes('tech') || lower.includes('stack') || lower.includes('react') || lower.includes('python')) {
         suggestedDescription = `${currentDescription || ''} Built using modern full-stack web technologies including React, TypeScript, Node.js, and AI API integrations to deliver high reliability and intuitive UI.`;
         reply = `Added technical stack specifications to your project description!`;
-      } else if (lastUserMsg.length > 10) {
+      } else if (lastUserMsg.length > 8) {
         suggestedDescription = `${currentDescription ? currentDescription + ' ' : ''}${lastUserMsg.trim()}`;
-        reply = `I've incorporated your feedback into a refined project description. Take a look below!`;
+        reply = `Got it! I've updated your proposed project description below based on your input.`;
       }
 
       return { reply, suggestedDescription };
