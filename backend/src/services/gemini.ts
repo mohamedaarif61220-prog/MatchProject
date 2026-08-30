@@ -440,6 +440,8 @@ Return ONLY valid JSON in this exact structure:
       console.error("Gemini feasibility audit failed, using fallback:", e);
       return buildLocalAudit();
     }
+  },
+
   async chatProjectAssistant(
     messages: Array<{ sender: 'user' | 'assistant'; text: string }>,
     projectName?: string,
